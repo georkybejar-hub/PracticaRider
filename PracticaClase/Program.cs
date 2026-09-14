@@ -1,8 +1,15 @@
+using Microsoft.EntityFrameworkCore;
+// using PracticaClase.Data; // ajusta si tu InventarioContext quedó en otro namespace
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+var connectionString = builder.Configuration.GetConnectionString("Inventario");
+// builder.Services.AddDbContext<InventarioContext>(options =>
+//     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 var app = builder.Build();
 
