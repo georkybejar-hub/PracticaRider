@@ -1,9 +1,5 @@
-﻿namespace PracticaClase.Repositories;
+﻿using PracticaClase.Models;
 
-using PracticaClase.Models;
+namespace PracticaClase.Repositories;
 
-public interface IVentaRepository
-{
-    Task RegistrarVentaAsync(Venta venta, List<DetalleVenta> detalles);
-    Task<IEnumerable<VwProductosMasVendido>> ObtenerProductosMasVendidosAsync();
-}
+public interface IVentaRepository : IRepository<Venta> { }

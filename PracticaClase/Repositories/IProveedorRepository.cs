@@ -1,11 +1,5 @@
-﻿namespace PracticaClase.Repositories;
+﻿using PracticaClase.Models;
 
-using PracticaClase.Models;
+namespace PracticaClase.Repositories;
 
-public interface IProveedorRepository
-{
-    Task<IEnumerable<Proveedore>> ObtenerProveedoresAsync();
-    Task<Proveedore?> ObtenerPorIdAsync(int id);
-    Task AgregarAsync(Proveedore proveedor);
-    Task ActualizarAsync(Proveedore proveedor);
-}
+public interface IProveedorRepository : IRepository<Proveedore> { }

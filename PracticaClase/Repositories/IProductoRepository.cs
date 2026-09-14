@@ -1,13 +1,5 @@
-﻿namespace PracticaClase.Repositories;
+﻿using PracticaClase.Models;
 
-using PracticaClase.Models;
+namespace PracticaClase.Repositories;
 
-public interface IProductoRepository
-{
-    Task<IEnumerable<Producto>> ObtenerTodosAsync();
-    Task<Producto?> ObtenerPorIdAsync(int id);
-    Task AgregarAsync(Producto producto);
-    Task ActualizarAsync(Producto producto);
-    Task<IEnumerable<VwEstadoInventario>> ObtenerEstadoInventarioAsync();
-    Task<IEnumerable<VwAlertasActiva>> ObtenerAlertasActivasAsync();
-}
+public interface IProductoRepository : IRepository<Producto> { }

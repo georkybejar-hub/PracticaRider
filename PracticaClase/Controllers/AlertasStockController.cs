@@ -1,70 +1,45 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PracticaClase.Services;
 
 namespace PracticaClase.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class AlertasStockController : ControllerBase
 {
-    private readonly IAlertasStockService _service;
+    private readonly IAlertaStockService _service;
 
-    public AlertasStockController(IAlertasStockService service)
+    public AlertasStockController(IAlertaStockService service)
     {
         _service = service;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] bool? soloActivas)
     {
-        var alertas = await _service.GetAllAsync();
-        return Ok(alertas);
+        return Ok(soloActivas == true ? await _service.GetActivasAsync() : await _service.GetAllAsync());
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         var alerta = await _service.GetByIdAsync(id);
-
-        if (alerta == null)
-            return NotFound();
-
-        return Ok(alerta);
+        return alerta is null ? NotFound() : Ok(alerta);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create(
-        [FromBody] Models.AlertasStock alerta)
+    [HttpPost("{id}/atender")]
+    public async Task<IActionResult> MarcarAtendida(int id)
     {
-        var result = await _service.CreateAsync(alerta);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = result.IdAlerta },
-            result);
+        try
+        {
+            await _service.MarcarAtendidaAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensaje = ex.Message });
+        }
     }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(
-        int id,
-        [FromBody] Models.AlertasStock alerta)
-    {
-        var result = await _service.UpdateAsync(id, alerta);
-
-        if (result == null)
-            return NotFound();
-
-        return Ok(result);
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var result = await _service.DeleteAsync(id);
-
-        if (!result)
-            return NotFound();
-
-        return NoContent();
-    }
-}   
+}

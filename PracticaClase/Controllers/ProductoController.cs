@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PracticaClase.Models;
 using PracticaClase.Services;
 
 namespace PracticaClase.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ProductoController : ControllerBase
@@ -16,55 +18,54 @@ public class ProductoController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] bool? soloActivos, [FromQuery] int? idCategoria)
     {
-        var productos = await _service.GetAllAsync();
-        return Ok(productos);
+        if (idCategoria.HasValue) return Ok(await _service.GetPorCategoriaAsync(idCategoria.Value));
+        if (soloActivos == true) return Ok(await _service.GetActivosAsync());
+        return Ok(await _service.GetAllAsync());
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         var producto = await _service.GetByIdAsync(id);
-
-        if (producto == null)
-            return NotFound();
-
-        return Ok(producto);
+        return producto is null ? NotFound() : Ok(producto);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Producto producto)
+    public async Task<IActionResult> Create(Producto producto)
     {
-        var result = await _service.CreateAsync(producto);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = result.IdProducto },
-            result);
+        try
+        {
+            var creado = await _service.CreateAsync(producto);
+            return CreatedAtAction(nameof(GetById), new { id = creado.IdProducto }, creado);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(
-        int id,
-        [FromBody] Producto producto)
+    public async Task<IActionResult> Update(int id, Producto producto)
     {
-        var result = await _service.UpdateAsync(id, producto);
-
-        if (result == null)
-            return NotFound();
-
-        return Ok(result);
+        if (id != producto.IdProducto) return BadRequest();
+        await _service.UpdateAsync(producto);
+        return NoContent();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Desactivar(int id)
     {
-        var result = await _service.DeleteAsync(id);
-
-        if (!result)
-            return NotFound();
-
-        return NoContent();
+        try
+        {
+            await _service.DesactivarAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensaje = ex.Message });
+        }
     }
 }

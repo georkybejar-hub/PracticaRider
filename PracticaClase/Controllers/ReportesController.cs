@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PracticaClase.Services;
 
 namespace PracticaClase.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ReportesController : ControllerBase
@@ -14,24 +16,16 @@ public class ReportesController : ControllerBase
         _service = service;
     }
 
-    [HttpGet("alertas-activas")]
-    public async Task<IActionResult> GetAlertasActivas()
-    {
-        var alertas = await _service.GetAlertasActivasAsync();
-        return Ok(alertas);
-    }
-
     [HttpGet("estado-inventario")]
-    public async Task<IActionResult> GetEstadoInventario()
-    {
-        var inventario = await _service.GetEstadoInventarioAsync();
-        return Ok(inventario);
-    }
+    public async Task<IActionResult> EstadoInventario() => Ok(await _service.GetEstadoInventarioAsync());
 
-    [HttpGet("productos-mas-vendidos")]
-    public async Task<IActionResult> GetProductosMasVendidos()
-    {
-        var productos = await _service.GetProductosMasVendidosAsync();
-        return Ok(productos);
-    }
+    [HttpGet("bajo-stock")]
+    public async Task<IActionResult> BajoStock() => Ok(await _service.GetProductosBajoStockAsync());
+
+    [HttpGet("mas-vendidos")]
+    public async Task<IActionResult> MasVendidos([FromQuery] int top = 10) =>
+        Ok(await _service.GetProductosMasVendidosAsync(top));
+
+    [HttpGet("alertas-activas")]
+    public async Task<IActionResult> AlertasActivas() => Ok(await _service.GetAlertasActivasAsync());
 }

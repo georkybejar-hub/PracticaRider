@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PracticaClase.Models;
 using PracticaClase.Services;
 
 namespace PracticaClase.Controllers;
 
+public record RegistrarVentaRequest(Venta Venta, List<DetalleVenta> Lineas);
+
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class VentaController : ControllerBase
@@ -16,56 +20,29 @@ public class VentaController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var ventas = await _service.GetAllAsync();
-        return Ok(ventas);
-    }
+    public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         var venta = await _service.GetByIdAsync(id);
-
-        if (venta == null)
-            return NotFound();
-
-        return Ok(venta);
+        return venta is null ? NotFound() : Ok(venta);
     }
+
+    [HttpGet("{id}/detalle")]
+    public async Task<IActionResult> GetDetalle(int id) => Ok(await _service.GetDetalleAsync(id));
 
     [HttpPost]
-    public async Task<IActionResult> Create(
-        [FromBody] Venta venta)
+    public async Task<IActionResult> Registrar(RegistrarVentaRequest request)
     {
-        var result = await _service.CreateAsync(venta);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = result.IdVenta },
-            result);
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(
-        int id,
-        [FromBody] Venta venta)
-    {
-        var result = await _service.UpdateAsync(id, venta);
-
-        if (result == null)
-            return NotFound();
-
-        return Ok(result);
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var result = await _service.DeleteAsync(id);
-
-        if (!result)
-            return NotFound();
-
-        return NoContent();
+        try
+        {
+            var venta = await _service.RegistrarVentaAsync(request.Venta, request.Lineas);
+            return CreatedAtAction(nameof(GetById), new { id = venta.IdVenta }, venta);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 }

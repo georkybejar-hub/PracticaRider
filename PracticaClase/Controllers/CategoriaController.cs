@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PracticaClase.Models;
 using PracticaClase.Services;
 
 namespace PracticaClase.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class CategoriaController : ControllerBase
@@ -15,49 +18,49 @@ public class CategoriaController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var categorias = await _service.GetAllAsync();
-        return Ok(categorias);
-    }
+    public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         var categoria = await _service.GetByIdAsync(id);
-
-        if (categoria == null)
-            return NotFound();
-
-        return Ok(categoria);
+        return categoria is null ? NotFound() : Ok(categoria);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Models.Categoria categoria)
+    public async Task<IActionResult> Create(Categoria categoria)
     {
-        var result = await _service.CreateAsync(categoria);
-        return CreatedAtAction(nameof(GetById), new { id = result.IdCategoria }, result);
+        try
+        {
+            var creada = await _service.CreateAsync(categoria);
+            return CreatedAtAction(nameof(GetById), new { id = creada.IdCategoria }, creada);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { mensaje = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] Models.Categoria categoria)
+    public async Task<IActionResult> Update(int id, Categoria categoria)
     {
-        var result = await _service.UpdateAsync(id, categoria);
-
-        if (result == null)
-            return NotFound();
-
-        return Ok(result);
+        if (id != categoria.IdCategoria) return BadRequest();
+        await _service.UpdateAsync(categoria);
+        return NoContent();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var result = await _service.DeleteAsync(id);
-
-        if (!result)
-            return NotFound();
-
-        return NoContent();
+        try
+        {
+            await _service.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensaje = ex.Message });
+        }
     }
 }

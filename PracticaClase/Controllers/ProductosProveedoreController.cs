@@ -1,87 +1,58 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PracticaClase.Models;
 using PracticaClase.Services;
 
 namespace PracticaClase.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ProductosProveedoreController : ControllerBase
 {
-    private readonly IProductosProveedoreService _service;
+    private readonly IProductoProveedorService _service;
 
-    public ProductosProveedoreController(IProductosProveedoreService service)
+    public ProductosProveedoreController(IProductoProveedorService service)
     {
         _service = service;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var productosProveedores = await _service.GetAllAsync();
-        return Ok(productosProveedores);
-    }
+    public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
     [HttpGet("{idProducto}/{idProveedor}")]
-    public async Task<IActionResult> GetById(
-        int idProducto,
-        int idProveedor)
+    public async Task<IActionResult> Get(int idProducto, int idProveedor)
     {
-        var productoProveedor = await _service.GetByIdAsync(
-            idProducto,
-            idProveedor);
-
-        if (productoProveedor == null)
-            return NotFound();
-
-        return Ok(productoProveedor);
+        var relacion = await _service.GetAsync(idProducto, idProveedor);
+        return relacion is null ? NotFound() : Ok(relacion);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(
-        [FromBody] ProductosProveedore productoProveedor)
+    public async Task<IActionResult> Asociar(ProductosProveedore relacion)
     {
-        var result = await _service.CreateAsync(productoProveedor);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new
-            {
-                idProducto = result.IdProducto,
-                idProveedor = result.IdProveedor
-            },
-            result);
+        try
+        {
+            var creada = await _service.AsociarAsync(relacion);
+            return CreatedAtAction(nameof(Get), new { idProducto = creada.IdProducto, idProveedor = creada.IdProveedor }, creada);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { mensaje = ex.Message });
+        }
     }
 
-    [HttpPut("{idProducto}/{idProveedor}")]
-    public async Task<IActionResult> Update(
-        int idProducto,
-        int idProveedor,
-        [FromBody] ProductosProveedore productoProveedor)
-    {
-        var result = await _service.UpdateAsync(
-            idProducto,
-            idProveedor,
-            productoProveedor);
-
-        if (result == null)
-            return NotFound();
-
-        return Ok(result);
-    }
-
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{idProducto}/{idProveedor}")]
-    public async Task<IActionResult> Delete(
-        int idProducto,
-        int idProveedor)
+    public async Task<IActionResult> Desasociar(int idProducto, int idProveedor)
     {
-        var result = await _service.DeleteAsync(
-            idProducto,
-            idProveedor);
-
-        if (!result)
-            return NotFound();
-
-        return NoContent();
+        try
+        {
+            await _service.DesasociarAsync(idProducto, idProveedor);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensaje = ex.Message });
+        }
     }
 }

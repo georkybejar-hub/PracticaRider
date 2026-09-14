@@ -1,9 +1,8 @@
-﻿namespace PracticaClase.Repositories;
+﻿using PracticaClase.Models;
 
-using PracticaClase.Models;
+namespace PracticaClase.Repositories;
 
-public interface IPedidoProveedorRepository
+public interface IPedidoProveedorRepository : IRepository<PedidosProveedor>
 {
-    Task CrearPedidoAsync(PedidosProveedor pedido, List<DetallePedido> detalles);
     Task RecibirPedidoAsync(int idPedido);
 }
